@@ -16,7 +16,7 @@ const projectsData: Project[] = [
     title: 'Gahmen Explorer : Visualizing Singapore Government Data',
     description: `Gahmen Explorer aims to make government data more accessible and understandable. Information on the Singapore budget and the organization structure of the pubic service is visualized in a more interactive way. The project is built using svelte and Go .`,
     imgSrc: '/static/images/projects/gahmen-sg.png',
-    href: 'gahmen.bearylogical.net',
+    href: 'https://gahmen.bearylogical.net',
   },
 ]
 
