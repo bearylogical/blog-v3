@@ -1,1 +1,17 @@
-{"personal":1,"budget-sg":1,"aws":1,"textract":1,"home-assistant":1,"sgdi":1,"scraping":1,"airflow":1,"scrapy":1,"capstone":4,"fast-parliament":4,"feature":4,"natural-language-processing":1,"reddit":1,"ml":1}
+{
+  "personal": 1,
+  "budget-sg": 1,
+  "aws": 1,
+  "textract": 1,
+  "home-assistant": 1,
+  "sgdi": 1,
+  "scraping": 1,
+  "airflow": 1,
+  "scrapy": 1,
+  "capstone": 4,
+  "fast-parliament": 4,
+  "feature": 4,
+  "natural-language-processing": 1,
+  "reddit": 1,
+  "ml": 1
+}
