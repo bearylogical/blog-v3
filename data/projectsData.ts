@@ -7,20 +7,16 @@ interface Project {
 
 const projectsData: Project[] = [
   {
-    title: 'A Search Engine',
-    description: `What if you could look up any information in the world? Webpages, images, videos
-    and more. Google has many features to help you find exactly what you're looking
-    for.`,
-    imgSrc: '/static/images/google.png',
-    href: 'https://www.google.com',
+    title: 'Postal SG : Visualizing Singapore Postal Code System',
+    description: `What does 120k postal codes in Singapore look like? This project visualizes the distribution of the postal code system and provides an interactive view of the postal code system in Singapore.`,
+    imgSrc: '/static/images/projects/postal-sg.png',
+    href: 'https://stories.bearylogical.net/postal-sg',
   },
   {
-    title: 'The Time Machine',
-    description: `Imagine being able to travel back in time or to the future. Simple turn the knob
-    to the desired date and press "Go". No more worrying about lost keys or
-    forgotten headphones with this simple yet affordable solution.`,
-    imgSrc: '/static/images/time-machine.jpg',
-    href: '/blog/the-time-machine',
+    title: 'Gahmen Explorer : Visualizing Singapore Government Data',
+    description: `Gahmen Explorer aims to make government data more accessible and understandable. Information on the Singapore budget and the organization structure of the pubic service is visualized in a more interactive way. The project is built using svelte and Go .`,
+    imgSrc: '/static/images/projects/gahmen-sg.png',
+    href: 'gahmen.bearylogical.net',
   },
 ]
 

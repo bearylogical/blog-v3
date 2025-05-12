@@ -1,0 +1,737 @@
+---
+
+title: 'Predict the subreddit!'
+date: '2019-06-24'
+tags: ['natural-language-processing', 'reddit', 'ml']
+draft: false
+summary: 'Supervised learning + NLP to create a binary classifier'
+---
+
+
+Being an avid redditor (lurker) myself, I've always wondered how unique certain subreddits are. For the uninitiated, subreddits are equivalent to sub-topics of a message board. As an example, the r/Singapore subreddit would cover all or most discussions about Singapore and can range from the fascinating to the truly ... strange.
+
+
+On the topic of subreddits, i'm a sucker for reading into 'juicy' subreddits that have posts spanning interpersonal relationships. It's not uncommon for a random internet stranget to spill their heart out and treat other strangers as their 'aunt agony'. Interestingly, there exists two similar subreddits `relationship` and `confessions`.
+
+
+Wouldn't it be cool if, on the basis of historical posts, we can develop a method to differentiate between r/relationships or r/confessions subreddit? Well, we can - and it is pretty straightforward!
+
+
+Using common approaches in Natural Language Processing (NLP) - an increasingly popular Data Science topic - this post will go through some of the key steps invovled in this process. More importantly, it is to share an easily generalisable methodology that can be used on other subreddits as well. 
+
+A caveat, however, is that this method is constrained to text-based subreddits which only have text in their posts. Posts with images are not going to be used as it is outside of the scope of this post.
+
+{/* {{% alert note %}} */}
+This post assumes some familiarity with Natural Language Processing. Do continue below if you are already familiar with the topic!
+{/* {{% /alert %}} */}
+
+{/* {{% toc %}} */}
+
+
+## Importing our libraries
+
+```python
+import numpy as np
+import requests
+import pandas as pd
+import time
+import random
+import regex as re
+
+import matplotlib.pyplot as plt
+    
+from nltk.corpus import stopwords # Import the stop word list
+from nltk.stem import WordNetLemmatizer 
+from nltk import word_tokenize
+
+from sklearn.metrics import classification_report, roc_curve
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import MultinomialNB, BernoulliNB, GaussianNB
+from sklearn.neighbors import  KNeighborsClassifier 
+
+import warnings
+from psaw import PushshiftAPI
+
+# After the imports
+warnings.filterwarnings(action='ignore')
+```
+
+## Data Acquisition
+
+Scrap data using the PushShiftAPI to extract more than 1000 posts per subreddit to overcome Reddit's imposed limitation.
+
+```python
+%time
+
+api = PushshiftAPI()
+confessions = pd.DataFrame(list(api.search_submissions(subreddit='confessions',
+                                         filter=['author','title','subreddit','selftext'],
+                                         limit=5000)))
+relationships = pd.DataFrame(list(api.search_submissions(subreddit='relationships',
+                                         filter=['author','title','subreddit','selftext'],
+                                         limit=5000)))
+
+# store the scrapped data.
+confessions.to_csv('./data/confessions.csv')
+relationships.to_csv('./data/relationships.csv')
+```
+
+## Data Cleaning
+
+We create a `filter_columns` function that filters out the title, self text and subreddit name (our target)
+
+We use the `.count()` function in our DataFrame object to understand the class balance of our dataset. Ideally, we want the number of entries of type confessions and/or relationships to be the same.
+
+```python
+def filter_columns(df):
+    columns_to_retain = ['title','selftext','subreddit','author']
+    return df[columns_to_retain]
+
+df_relationships_clean = filter_columns(df_relationships)
+df_conf_clean = filter_columns(df_confessions)
+`
+display(df_relationships_clean['title'].count())
+display(df_conf_clean['title'].count())
+```
+
+Below is a sample of our data:
+
+
+```python
+df_relationships_clean.head()
+```
+
+
+|    | title                                                              | selftext                                                                                                                                   | subreddit     | author              |
+|----|--------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|---------------|---------------------|
+| 0  | Hi I'm here to find my friends without anybody knowing             | NaN                                                                                                                                        | relationships | 0100100001010000    |
+| 1  | My (M31) mind might be broken when i thi k about relationship gaps | [removed]                                                                                                                                  | relationships | obviousThrowaway274 |
+| 2  | How do I (26m) apologize to my ex (25f) in a dating app message    | Long story short, we broke up 4 months ago and haven't spoken since. The breakup was my fault and I've been reflecting on things recently. | relationships | Throwitallaway73734 |
+| 3  | Do you believe it's better to solve an argument face-to-face?      | [removed]                                                                                                                                  | relationships | EvenKealed          |
+| 4  | Am i broken?                                                       | [removed]                                                                                                                                  | relationships | obviousThrowaway274 |
+
+
+```python
+df_conf_clean.head()
+```
+
+
+
+|    | title                                                                 | selftext                                                                                                                                                             | subreddit   | author               |
+|----|-----------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|----------------------|
+| 0  | Thought a girl was giving me a quarter and then I noticed the design | So, this was back in 2nd grade. It's a normal day at school and recess comes around. Everyone's running around playing tag and doing all that kiddie stuff.        | confessions | jessthatrandomperson |
+| 1  | How can I enjoy my last few days?                                     | I am going to die very soon. \n\nI am terrified. I'm not a religious person so I don't have that comfort. How can I enjoy the time I have left? I don't know what... | confessions | throwaway948118      |
+| 2  | I am a narcissistic asshole and I know it and I can't stop it         | I am basically just a manipulative horrible person. I lack empathy. I always have to be in control and in charge. I always want to win and look better than everyon | confessions | royjorbison          |
+| 3  | I use Reddit as an audience for my puns                               | I can't go ten sentences without thinking of a pun. I've been told they're awful, so I can't say them in person. I've been waiting for a good enough opportunity... | confessions | anikdylan27          |
+| 4  | I'm sorry for being an asshole last night                             | To the guy I met last night, who's name escapes me at the moment. You offered to buy me a drink after talking for a bit, and I rudely snapped at you for some...   | confessions | roodeeMental         |
+
+
+Prior to this, we may wish to remove posts that have 'Moderator' as an author to train our model on more 'authentic' posts.
+
+
+```python
+df_relationships_clean.loc[:,'author'] = df_relationships_clean.author.map(lambda x : x.lower())
+df_conf_clean.loc[:,'author'] = df_conf_clean.author.map(lambda x : x.lower())
+```
+
+
+```python
+df_relationships_clean = df_relationships_clean[~df_relationships_clean.author.str.contains('moderator')]
+df_conf_clean = df_conf_clean[~df_conf_clean.author.str.contains('moderator')]
+```
+
+```python
+df_relationships_clean.isna().sum()
+```
+
+    title         0
+    selftext     16
+    subreddit     0
+    author        0
+    dtype: int64
+
+
+```python
+df_conf_clean.isna().sum()
+```
+
+    title          0
+    selftext     739
+    subreddit      0
+    author         0
+    dtype: int64
+
+
+We also observe empty selftext in both subreddits. we shall drop rows with empty selftext.
+
+```python
+df_relationships_clean = df_relationships_clean.dropna(axis=0)
+df_conf_clean = df_conf_clean.dropna(axis=0)
+```
+
+Ensure only posts with `selftext` more than 10 words are selected.
+
+```python
+df_relationships_clean ['selftext_len'] = df_relationships_clean .selftext.map(lambda x: len(x.split()))
+df_relationships_clean  = df_relationships_clean [df_relationships_clean .selftext_len > 10]
+df_conf_clean['selftext_len'] = df_conf_clean.selftext.map(lambda x: len(x.split()))
+df_conf_clean = df_conf_clean[df_conf_clean.selftext_len > 10]
+```
+Next, we drop our duplicates:
+
+```python
+df_relationships_clean.drop_duplicates(inplace=True)
+df_conf_clean.drop_duplicates(inplace=True)
+```
+### Displaying our class balances after dropping the rows:
+
+
+
+```python
+display(df_relationships_clean.count())
+display(df_conf_clean.count())
+```
+```
+For `relationships`:
+
+    title           2925
+    selftext        2925
+    subreddit       2925
+    author          2925
+    selftext_len    2925
+    dtype: int64
+```
+```
+For `confessions`:
+
+    title           3893
+    selftext        3893
+    subreddit       3893
+    author          3893
+    selftext_len    3893
+    dtype: int64
+```
+Seeing that a value of 2900 is the limiting number, we randomly select 2900 entries from both sets.
+
+
+```python
+subset_relationships_clean = df_relationships_clean.sample(n=2900,random_state=666)
+subset_conf_clean = df_conf_clean.sample(n=2900,random_state=666)
+```
+
+## Class Balance
+
+```python
+# combine both subsets into a DF
+df_pre = subset_relationships_clean.append(subset_conf_clean,ignore_index=True)
+df_pre.subreddit.value_counts(normalize=True)
+```
+
+
+## Target Encoding
+We then perform an encoding of our target : 1 corresponds to posts of type `confessions` while 0 corresponds to posts of type `relationships`.
+
+```python
+# create target class columns 0 = relationships, 1 = confessions - encoding
+
+df_pre['label'] = df_pre.subreddit.map({'relationships':0,'confessions':1}).astype('int')
+df_pre.head()
+```
+
+|    | title                                                              | selftext                                                                                                                                                                                                                                                                                                             | subreddit     | author            |   selftext_len |   label |
+|----|--------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|-------------------|----------------|---------|
+| 0  | I (F18) am questioning the intentions of a random guy (M20).       | My lovely (quite attractive) new boyfriend (M19) and I (F18) were grabbing coffee the other day when a guy came up to us and told me I had a wonderful smile. It was in front of my boyfriend so I knew nothing was up and just said thank you. It seemed innocent enough. Later that day however, he tried adding | relationships | boterbabbelaartje |            334 |       0 |
+| 1  | Jealousy                                                           | My boyfriend(29m) and I(30f) have been together for 5 years and living together for 3 years. \n\nOverall we have a great relationship and I love him to death but I struggle with jealousy. I never used to struggle with jealousy like I do with my current boyfriend. It causes arguments sometimes and I don' | relationships | taramarie87       |            103 |       0 |
+| 2  | I [28F] wants sex all the time. I've made this clear to my [28M] husband. | Lately, I've been wanting more sex. To have sex more often. At least 4 times a week. I've made this clear to my husband and he said that he feels pressured by this. \n\nThis is something I've been working on myself. To be more clear with what I want and express my needs and desires.                   | relationships | missionblueberry  |            236 |       0 |
+| 3  | I [32m] am having issues with jealousy with my [32f] wife.          | Hooo boy. Here we go. \n\nMy wife and I have been together for 10 years, married for 6. We have a good, if sometimes boring, marriage. We communicate relatively well and rarely fight. We've both always been mutually attracted to others and have a healthy respect for celebrities, fictional characters, and friend | relationships | dcsrm             |            438 |       0 |
+| 4  | Is my girlfriend into wedgies?                                     | My girlfriend (F 21yrs old) and I (M 32yrs old) were fooling around and she said she wanted me to give her a wedgie. I thought she was joking at first but she really seemed to want one. I gave her a light one, but she was still in normal underwear and seemed happy. She asked if I wanted to try again with                               | relationships | davidsardinas36   |             73 |       0 |
+
+
+
+### Cleaning Function
+
+Ensure formatting of text by:
+- Converting all to lower cases
+- removing groups of words in parentheses
+- remove line breaks
+- removing special characters
+
+We encapsulate this cleaning into the function `clean_text`
+
+```python
+# convert the stop words to a set.
+stops = set(stopwords.words('english'))
+
+def clean_text(text):
+    #01 convert titles, selftext into lowercase
+    lower_text = text.lower()
+    #02 remove brackets and parenthesis from the title and selftext.
+    no_br_paret_text = re.sub(r'\(.+?\)|\[.+?\]',' ',str(lower_text))
+    #03 remove special characters
+    removed_special = re.sub(r'[^0-9a-zA-Z ]+',' ',str(no_br_paret_text))
+    #04 remove xamp200b
+    remove_xamp200b = re.sub(r'ampx200b',' ',str(removed_special))
+    #05 remove digits
+    result = re.sub(r'\d+', '', remove_xamp200b).split()
+    #06 split into individual words
+    meaningful_words = [w for w in result if not w in stops]
+    
+    #07 Join the words back into one string separated by space, 
+    # and return the result.
+    return(" ".join(meaningful_words))
+
+df[['title','selftext']] = df_pre[['title','selftext']].applymap(clean_text)
+df.head()
+```
+A sample of our pre-cleaned data:
+|    | title                                  | selftext                                                                                                                                      | subreddit     | author            |   selftext_len |   label |
+|----|----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|---------------|-------------------|----------------|---------|
+| 0  | questioning intentions random new girl asked b... | lovely new boyfriend told girl cig outside school friend since last october things great however one night went party without told lot peo... | relationships | boterbabbelaartje |            334 |       0 |
+| 1  | jealousy                                | boyfriend together almost years two beautiful daughters first born back things changed became stay home dad went work work used love thought p... | relationships | taramarie87       |            103 |       0 |
+| 2  | wants sex time made known whose        | lately wanting sex sex time bit back story relationship sex past never problem sex often enough even though bit different partners past always ... | relationships | missionblueberry  |            236 |       0 |
+| 3  | issues jealousy wife stage acting      | hooo boy go wife married years coming ups downs everything expected long term relationship sex life fine past maybe times week now barely time... | relationships | dcsrm             |            438 |       0 |
+| 4  | girlfriend wedgies                     | girlfriend together months used phone look something like asked thought funny asked wanted try different pair liked said might something know... | relationships | davidsardinas36   |             73 |       0 |
+
+## Post Cleaning
+
+
+```python
+pd.DataFrame(data=zip(df_pre['selftext'],df['selftext']),columns=['pre','post']).head(5)
+```
+
+
+
+|    | pre                                                                                                                                                                                                                                                                                                                      | post                                                                                                                                                                                                                                                                                         |
+|----|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0  | My lovely (quite attractive) new boyfriend (M19) and I (F18) were grabbing coffee the other day when a guy came up to us and told me I had a wonderful smile. It was in front of my boyfriend so I knew nothing was up and just said thank you. It seemed innocent enough. Later that day however, he tried adding | lovely new boyfriend told girl cig outside school friend since last october things great however one night went party without told lot people drink little talked little people ended getting really drunk ended staying friends apartment woke next morning felt sick head hurt lot wanted... |
+| 1  | My boyfriend(29m) and I(30f) have been together for 5 years and living together for 3 years. \n\nOverall we have a great relationship and I love him to death but I struggle with jealousy. I never used to struggle with jealousy like I do with my current boyfriend. It causes arguments sometimes and I don't know what... | boyfriend together almost years two beautiful daughters first born back things changed became stay home dad went work work used love thought pretty happy kids grew bit realized something missing life felt like something lost something made whole things changed since became parents kids... |
+| 2  | Lately, I've been wanting more sex. To have sex more often. At least 4 times a week. I've made this clear to my husband and he said that he feels pressured by this. \n\nThis is something I've been working on myself. To be more clear with what I want and express my needs and desires.                               | lately wanting sex sex time bit back story relationship sex past never problem sex often enough even though bit different partners past always times week however husband feel pressured said felt pressured wanted something felt pressured wanted something else felt pressured always happy...   |
+| 3  | Hooo boy. Here we go. \n\nMy wife and I have been together for 10 years, married for 6. We have a good, if sometimes boring, marriage. We communicate relatively well and rarely fight. We've both always been mutually attracted to others and have a healthy respect for celebrities, fictional characters, and friend | hooo boy go wife married years coming ups downs everything expected long term relationship sex life fine past maybe times week now barely times month wife decided take stage acting said always something wanted never told wanted take lessons said felt scared thought able never good enoug... |
+| 4  | My girlfriend (F 21yrs old) and I (M 32yrs old) were fooling around and she said she wanted me to give her a wedgie. I thought she was joking at first but she really seemed to want one. I gave her a light one, but she was still in normal underwear and seemed happy. She asked if I wanted to try again with                               | girlfriend together months used phone look something like asked thought funny asked wanted try different pair liked said might something know something know something know something know something know something know something know something know something know something know something know... |
+
+## Data Exploration
+
+Split title and self text into two classifiers where the output of title_classifier and self_text classifier would provide indication of which subreddit the posts belong to.
+
+
+```python
+#split titles, and self text into seperate df
+
+df_title = df[['title','label']]
+df_selftext = df[['selftext','label']]
+```
+
+
+```python
+def get_freq_words(sparse_counts, columns):
+    # X_all is a sparse matrix, so sum() returns a 'matrix' datatype ...
+    #   which we then convert into a 1-D ndarray for sorting
+    word_counts = np.asarray(sparse_counts.sum(axis=0)).reshape(-1)
+
+    # argsort() returns smallest first, so we reverse the result
+    largest_count_indices = word_counts.argsort()[::-1]
+
+    # pretty-print the results! Remember to always ask whether they make sense ...
+    freq_words = pd.Series(word_counts[largest_count_indices], 
+                           index=columns[largest_count_indices])
+
+    return freq_words
+```
+
+
+```python
+# Let's use the CountVectorizer to count words for us for each class
+
+# create mask
+
+X_1 = df_selftext[df_selftext['label'] == 1]
+X_0 = df_selftext[df_selftext['label'] == 0]
+
+cvt      =  CountVectorizer(ngram_range=(1,1),stop_words='english')
+X_1_all    =  cvt.fit_transform(X_1['selftext'])
+X_0_all    =  cvt.fit_transform(X_0['selftext'])
+columns_1  =  np.array(cvt.get_feature_names())          # ndarray (for indexing below)
+columns_0  =  np.array(cvt.get_feature_names())    
+```
+
+
+```python
+freq_words_1 = get_freq_words(X_1_all, columns_1)
+freq_words_0 = get_freq_words(X_0_all, columns_0)
+
+```
+
+
+```python
+print('Confessions:')
+display(freq_words_1[:10])
+print("\n")
+print('Relationships:')
+display(freq_words_0[:10])
+```
+Here are some key words that appear in the Confessions data set - which would mean that the words `landlord`,`jeopardise`, etc. would make it more than likely for the post to be of `confessions` class.
+```
+    Confessions:
+
+    landlord       3063
+    msg            2325
+    jeopardise     1979
+    teachings      1721
+    eyes           1674
+    pur            1506
+    user           1438
+    overworking    1405
+    generic        1133
+    lacking        1109
+    dtype: int64
+```
+```
+  
+ Same for `relationships`:
+
+    Relationships:
+
+    like            6690
+    time            4761
+    know            4694
+    want            4630
+    really          4235
+    feel            4000
+    relationship    3744
+    said            3245
+    things          3070
+    told            2999
+    dtype: int64
+```
+## Data Modeling
+
+### Train Test Split
+
+Here, we start with our model development. Before that, we perform a train/test split to ensure that we can validate our model performance.
+
+```python
+X_text = df_selftext['selftext']
+y_text = df_selftext['label']
+
+X_text_train, X_text_test, y_text_train, y_text_test = train_test_split(X_text,y_text,stratify=y_text) 
+```
+
+### Model Playground
+
+We create the class `LemmaTokenizer` to do both lemmatize each word of each entry. I.e. given a list of words, we [lemmatize](https://nlp.stanford.edu/IR-book/html/htmledition/stemming-and-lemmatization-1.html) each word.
+
+
+Firstly, we try the Naive Bayes model - MultinomialNB as there are multiple nominal features in the form of the various tokens.
+
+
+```python
+classifiers = []
+vectorizers = [('cvec', CountVectorizer(stop_words='english',tokenizer=LemmaTokenizer())),
+              ('tfvec', TfidfVectorizer(stop_words='english',tokenizer=LemmaTokenizer()))]
+
+for vectorizer in vectorizers:
+    bayes_pipe = Pipeline([
+            (vectorizer),
+            ('mnb', MultinomialNB())
+        ])
+    scores = cross_val_score(bayes_pipe, X_text_train, y_text_train,cv=5,verbose=1)
+    b = bayes_pipe.fit(X_text_train, y_text_train)
+    y_pred = b.predict(X_text_test)
+    print(classification_report(y_text_test, y_pred, target_names=['class 0','class 1']))
+    print('Cross val score for mnb classifier using {} vectorizer is {}'.format(vectorizer[0],scores))
+    print('Accuracy score for mnb classifier using {} vectorizer is {}'.format(vectorizer[0],bayes_pipe.score(X_text_test, y_text_test)))
+```
+```
+
+                  precision    recall  f1-score   support
+    
+         class 0       0.77      0.95      0.85       725
+         class 1       0.93      0.71      0.81       725
+    
+        accuracy                           0.83      1450
+       macro avg       0.85      0.83      0.83      1450
+    weighted avg       0.85      0.83      0.83      1450
+    
+    Cross val score for mnb classifier using cvec vectorizer is [0.80114943 0.80689655 0.86321839 0.81724138 0.79770115]
+    Accuracy score for mnb classifier using cvec vectorizer is 0.8289655172413793
+```
+```
+
+                  precision    recall  f1-score   support
+    
+         class 0       0.65      0.99      0.78       725
+         class 1       0.98      0.46      0.63       725
+    
+        accuracy                           0.73      1450
+       macro avg       0.82      0.73      0.71      1450
+    weighted avg       0.82      0.73      0.71      1450
+    
+    Cross val score for mnb classifier using tfvec vectorizer is [0.71149425 0.70689655 0.74712644 0.73448276 0.7045977 ]
+    Accuracy score for mnb classifier using tfvec vectorizer is 0.7282758620689656
+```
+
+Thus the recall scores for multinomial NB with countvectorizer seems to provide higher recall when compared to the tfidf vectorizer.
+
+In the meantime, we create a function to encapsulate our evaluation process such that it returns only the false positive rate and true positive rate with a `sklearn` processing pipeline.
+
+
+```python
+# store predicted_proba scores for later evaluation under ROC curve
+def generate_roc(pipeline):
+
+    b = pipeline.fit(X_text_train, y_text_train)
+    print(f"Train Score:{round(b.score(X_text_train, y_text_train),2)} / Test Score {round(b.score(X_text_test, y_text_test),2)}")
+    fpr, tpr, _ = roc_curve(y_text_test, b.predict_proba(X_text_test)[:,1],pos_label=1)
+    
+    return [fpr,tpr]
+
+```
+
+Rewriting the CountVectorizer Naive Bayes and TF-IDF Naive Bayes into their respective pipelines:
+
+```python
+cv_bayes_pipe = Pipeline([
+            (vectorizers[0]),
+            ('mnb', MultinomialNB())
+        ])
+```
+
+
+```python
+tfidf_bayes_pipe = Pipeline([
+            (vectorizers[1]),
+            ('mnb', MultinomialNB())
+        ])
+```
+
+## Pipeline for Logistic Regression Baseline
+
+
+```python
+pipe = Pipeline([
+    ('cvec', CountVectorizer(stop_words='english',tokenizer=LemmaTokenizer())),
+    ('lr', LogisticRegression(solver='saga',max_iter=300))
+])
+```
+
+#### Obtain hyperparameters for our vectorizer and logistic regressor.
+
+We can use a grid search to find the optimal hyperparameters for our pipelines:
+
+```python
+pipe_params = {
+    'cvec__max_features': [2500, 3000, 3500],
+    'cvec__ngram_range': [(1,1), (1,2)],
+    'lr__penalty' : ['elasticnet'],
+    'lr__C' : np.arange(0.1,1,0.1),
+    'lr__l1_ratio' : np.arange(0,1.1,0.2)
+}
+
+gs = GridSearchCV(pipe, param_grid=pipe_params, cv=5,verbose=1,n_jobs=-1)
+gs.fit(X_text_train, y_text_train)
+print(gs.best_score_)
+```
+    0.9154022988505747
+
+
+```python
+gs.best_params_
+```
+```
+    {'cvec__max_features': 2500,
+     'cvec__ngram_range': (1, 1),
+     'lr__C': 0.1,
+     'lr__l1_ratio': 1.0,
+     'lr__penalty': 'elasticnet'}
+```
+
+The best score for our logistic regression pipeline:
+
+```python
+gs.best_estimator_.score(X_text_test,y_text_test)
+```
+
+    0.9186206896551724
+
+Using the hyperparameters:
+
+```python
+# try model on title
+optimal_pipe = Pipeline([
+            ('cvec', CountVectorizer(tokenizer=LemmaTokenizer(),max_features=2500,ngram_range=(1,1))),
+            ('lr', LogisticRegression(solver='saga',max_iter=300,C=0.1,l1_ratio=1.0,penalty='elasticnet'))
+        ])
+```
+
+```python
+X_title = df_title['title']
+y_title = df_title['label']
+```
+
+```python
+optimal_pipe.fit(X_text_train, y_text_train)
+```
+
+We try the model on our `title` dataset to obtain the accuracy of the model to classify the subreddit from titles alone.
+
+
+```python
+y_logr_pred = optimal_pipe.predict(X_text_test)
+print(classification_report(y_text_test, y_logr_pred, target_names=['class 0','class 1']))
+```
+```
+                  precision    recall  f1-score   support
+    
+         class 0       0.55      1.00      0.71       725
+         class 1       0.99      0.18      0.31       725
+    
+        accuracy                           0.59      1450
+       macro avg       0.77      0.59      0.51      1450
+    weighted avg       0.77      0.59      0.51      1450
+    
+```
+
+Next, we explore the use tfidfvectorizer instead of countvectorizer to account for document similarity
+
+
+```python
+tfidf_pipe = Pipeline([
+    ('tfvec', TfidfVectorizer(stop_words='english',tokenizer=LemmaTokenizer())),
+    ('lr', LogisticRegression(solver='saga',max_iter=300))
+])
+
+tfidf_params = {
+    'tfvec__max_features': [2500, 3000, 3500],
+    'tfvec__ngram_range': [(1,1), (1,2)],
+    'lr__penalty' : ['elasticnet'],
+    'lr__C' : np.arange(0.1,1,0.1),
+    'lr__l1_ratio' : np.arange(0,1.1,0.2)
+}
+
+gs = GridSearchCV(tfidf_pipe, param_grid=tfidf_params, cv=3,verbose=1,n_jobs=-1)
+gs.fit(X_text_train, y_text_train)
+print(gs.best_score_)
+```
+
+    0.9183908045977012
+
+
+It seems that tfidf vectorizer performs best with the logistic regression model.
+
+
+```python
+tfidf_best_pipe = Pipeline([
+    ('tfvec', TfidfVectorizer(max_features=3500,ngram_range=(1,1),stop_words='english',tokenizer=LemmaTokenizer())),
+    ('lr', LogisticRegression(solver='saga',max_iter=300,C=0.9,l1_ratio=1.0,penalty='elasticnet'))
+])
+```
+
+
+```python
+# test model against test text data and rest of titles
+y_text_tfidf_pred = gs.best_estimator_.predict(X_text_test)
+y_title_tfidf_pred = gs.best_estimator_.predict(X_title)
+print("Text Report (results based on test data) \n" + 
+      classification_report(y_text_test, y_text_tfidf_pred, target_names=['class 0','class 1']))
+print("Titles (all titles) Report \n" + 
+      classification_report(y_title, y_title_tfidf_pred, target_names=['class 0','class 1']))
+```
+```
+    Text Report (results based on test data) 
+                  precision    recall  f1-score   support
+    
+         class 0       0.93      0.91      0.92       725
+         class 1       0.91      0.94      0.92       725
+    
+        accuracy                           0.92      1450
+       macro avg       0.92      0.92      0.92      1450
+    weighted avg       0.92      0.92      0.92      1450
+```
+```
+    Titles (all titles) Report 
+                  precision    recall  f1-score   support
+    
+         class 0       0.92      0.17      0.29      2900
+         class 1       0.54      0.98      0.70      2900
+    
+        accuracy                           0.58      5800
+       macro avg       0.73      0.58      0.49      5800
+    weighted avg       0.73      0.58      0.49      5800
+    ```
+
+While the optimised model with tfidf vectorizer performs remarkably well with high precision and recall, when used with the `titles` dataset, we can see that that it is somewhat overfit, unable to classify the titles correctly.
+
+
+
+```python
+# look at sample predictions
+
+pd.DataFrame(data=zip(X_text_test,y_text_test,y_text_tfidf_pred),columns=['text','actual','predicted']).head(5)
+```
+|    | text                                                                                                                                                                                                                                                                                               |   actual |   predicted |
+|----|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|-------------|
+| 0  | title says watched porn since got nasty furry virus last year used watch lot porn every day porn made feel guilty shameful made feel awful life since deleted history accounts changed passwords everything stopped watching since last year best decision made still feel awful sometimes guilt ... |        1 |           1 |
+| 1  | understand bad bad read lemon fanfic main video game character thought hot never told anyone know weird thought reading made feel like bad person still read sometimes feel awful guilty know bad bad help reading know bad bad read anyway feel awful know wrong know bad bad know reading makes... |        1 |           1 |
+| 2  | lovely quite attractive boyfriend met girl week ago asked coffee said busy school told ask sometime saw friend went coffee boyfriend together told girlfriend coffee said busy said okay saw girlfriend coffee went talk told girlfriend saw said saw girlfriend went coffee together told said... |        0 |           0 |
+| 3  | dated briefly three months never turned something serious met girl year ago dated briefly months never turned something serious felt weird lot awkward first met her felt like lot pressure like lot expectations lot thought first met her thought something special something real something meaningful... |        0 |           0 |
+| 4  | background dating almost years good many fights many arguments many misunderstandings many ups downs many highs many lows many good times many bad times many memories many experiences many lessons learned many mistakes made many things regretted many things wished done many things wished said... |        0 |           0 |
+
+
+
+## Model Evaluation & Summary
+
+
+```python
+cv_log_roc = generate_roc(optimal_pipe)
+tfidf_log_roc = generate_roc(tfidf_best_pipe)
+cv_nb_roc = generate_roc(cv_bayes_pipe)
+tfidf_nb_roc = generate_roc(tfidf_bayes_pipe)
+tfidf_knn_roc = generate_roc(knn_best_pipe)
+```
+```
+    Train Score:0.59 / Test Score 0.59
+    Train Score:0.93 / Test Score 0.92
+    Train Score:0.89 / Test Score 0.83
+    Train Score:0.81 / Test Score 0.73
+    Train Score:1.0 / Test Score 0.81
+```
+
+
+```python
+# Evaluation
+
+roc_data ={
+    'cv_nb' : cv_nb_roc,
+    'tfidf_nb_roc' : tfidf_nb_roc,
+    'cv_log_roc' : cv_log_roc,
+    'tfidf_log_roc' : tfidf_log_roc,
+    'tfidf_knn_roc' : tfidf_knn_roc
+}
+```
+
+
+```python
+#### Plot figure
+plt.figure(1,figsize=(10,5))
+plt.plot([0, 1], [0, 1], 'k--')
+for key,roc in roc_data.items():
+    plt.plot(roc[0], roc[1], label=key)
+plt.xlabel('Sensitivity')
+plt.ylabel('1 - Specificity')
+plt.title('ROC curve')
+plt.legend(loc='best')
+
+plt.savefig("./img/roc_curve.png",dpi=300)
+plt.show()
+```
+
+
+![png](output_89_0.png)
+
+
+
+The `crossvectorizer` + `logistic regression` model seems to perform similar to the `tfidf` vectorizer and `logistic regression` model. When looking at the accuracy score of all the models, the tfidf+ logistic regression model performs the best with an accuracy of 92% in terms of predicting if the selftext is either an r/confessions or r/relationships post.
+
