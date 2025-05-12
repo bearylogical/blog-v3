@@ -1,0 +1,74 @@
+---
+# Documentation: https://sourcethemes.com/academic/docs/managing-content/
+
+title: '(Repurposed) Supermarket tags and home assistant!'
+date: '2024-01-03'
+tags: ['home-assistant']
+draft: false
+summary: 'Using repurposed supermarket tags and home assistant to get cool-looking displays'
+---
+
+
+# E-Ink Tags and Home Assistant
+
+In this post i will show you (briefly) how i use a combination of home assistant, node red and other software to get the following result:
+
+![featured.jpg](featured.jpg)
+
+
+
+## System diagram
+![ccp.png](ccp.png) 
+
+## Bill of Materials
+
+1. Raspberry Pi 5 Starter Kit - 4GB →  [here](https://elektronicavoorjou.nl/product/raspberry-pi-5-starter-kit-4gb/ ) (€117.45)
+
+2. OpenEPaperLink Mini-AP v3 / zigbee wifi gateway + 5 x 1.54" Tags+ 5 x 2.9" Tags →  [here](https://www.tindie.com/products/electronics-by-nic/openepaperlink-mini-ap-v3-zigbee-wifi-gateway/) (€111.00)
+
+## Software Components Used
+
+1. Raspbian OS
+2. Docker
+3. NodeRed
+4. Home Assistant
+5. Open EPaper Link (preferably with an AP already setup - see BoM)
+
+## How to get started
+
+1. Use an existing server or get something which can run a server such as raspberry PI an install an OS (Unix/Linux based preferred)
+2. Set up Docker on your server with a container management software (i use Portainer) for your convenience
+3. You can follow the tutorial in sequence here to get (1) Docker, (2) Portainer, (3) Home assistant, (4) Node Red setup
+    - https://sequr.be/blog/2022/08/home-assistant-container-part-1-install-debian-docker-and-portainer/
+    - https://sequr.be/blog/2022/09/home-assistant-container-part-2-home-assistant-container/
+    - https://sequr.be/blog/2022/09/home-assistant-container-part-5-node-red
+4. Obtain an API key for Google Maps
+    - Follow the google documentation https://developers.google.com/maps → Note that you need to create a developer account with google to get an API key. NB: you might want to scope your key to the Routes API
+    - Google offers a 200USD credit on some of their APIs, of which Routes API is one of those.
+    - This would mean that you will need to query the API 39,000 times for you to exceed the "free" tier (or around 1.2k calls a day)
+5. Obtain an API key for the Nederlandse Spoorwagen / Dutch Railways (NS)
+    - You can do so here: https://apiportal.ns.nl/
+    - you must create an account and generate an API key for the _Reisinformatie API_ product
+6. Link Home assistant to your OpenEPaperLink AP using HACS (Home Assistant Community Store)
+    - Follow the instructions here : https://github.com/jonasniesner/open_epaper_link_homeassistant
+7. Ensure that your node-red and home assistant is able to communicate (see 3.)
+8. Have fun and start building your own tag displays!
+    - Use the various blocks to come up with your own way of using the API data and transforming the information into something that appears useful on each tag!
+      
+## Example Node-Red flow
+
+I use the flow below to retrieve train information from the NS API and route the information to my tags! 
+![node_red_transit_flow.png](./node_red_transit_flow.png) 
+
+This is what i get:
+
+![ccp_tag_travel.jpg](./ccp_tag_travel.jpg) 
+
+NB: The graphics are all custom specified, i do not have any plans of releasing a library to aid in this. The possibilities are endless! Have fun putting your own spin on it! 
+
+## Special Thanks
+https://sequr.be/ → for getting the software side setup easily!
+https://github.com/jjwbruijn/OpenEPaperLink → OpenEPaperLink project community https://www.tindie.com/stores/electronics-by-nic/ → Nic for having all the components available, tested and ready for use on Day 1
+https://github.com/jonasniesner/open_epaper_link_homeassistant → Home assistant Epaperlink integration by Jonas Niesner 
+https://www.home-assistant.io/ → open source home assistant!
+
