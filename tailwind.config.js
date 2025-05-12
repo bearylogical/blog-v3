@@ -22,7 +22,7 @@ module.exports = {
         14: '3.5rem',
       },
       fontFamily: {
-        sans: ['var(--font-space-grotesk)', ...fontFamily.sans],
+        sans: ['var(--font-ibm-plex-mono)', ...fontFamily.mono],
       },
       colors: {
         primary: colors.pink,
