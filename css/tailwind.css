@@ -7,7 +7,7 @@
 /* Core theme configuration */
 @theme {
   /* Font families */
-  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+  --font-sans: var(--font-ibm-plex-mono), ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
     'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
   /* Colors */
@@ -172,4 +172,34 @@ input:-webkit-autofill:focus {
 .linkicon {
   display: inline-block;
   vertical-align: middle;
+}
+
+@layer components {
+  .hand-highlight {
+  position: relative; /* Needed for the pseudo-element */
+  z-index: 1; /* Ensure the text is above the highlight */
+  padding: 0 0.1em; /* Small padding to give the highlight some room */
+  /* Add your desired text color here, e.g., color: #333; */
+}
+
+.hand-highlight::before {
+  content: '';
+  position: absolute;
+  top: -2px; /* Adjust for positioning */
+  left: -0.1em; /* Adjust for positioning */
+  bottom: -2px; /* Adjust for positioning */
+  right: -0.1em; /* Adjust for positioning */
+  background-color: rgba(255, 215, 0, 0.6); /* Semi-transparent gold, adjust opacity */
+  z-index: -1; /* Place the highlight behind the text */
+  /* This is where the magic happens for the hand-drawn look */
+  transform: rotate(-1deg); /* Subtle rotation for unevenness */
+  border-radius: 10% 2% 5% 15% / 15% 5% 2% 10%; /* Uneven border radius for a natural shape */
+  /* Optional: Add a subtle shadow or texture if desired */
+  /* box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2); */
+}
+
+/* This part handles wrapped lines for the highlight */
+.hand-highlight {
+  box-decoration-break: clone;
+}
 }

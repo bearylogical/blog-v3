@@ -7,11 +7,11 @@
   "budget-sg": 1,
   "aws": 1,
   "textract": 1,
-  "capstone": 4,
-  "fast-parliament": 4,
-  "feature": 4,
   "sgdi": 1,
   "scraping": 1,
   "airflow": 1,
-  "scrapy": 1
+  "scrapy": 1,
+  "capstone": 4,
+  "fast-parliament": 4,
+  "feature": 4
 }

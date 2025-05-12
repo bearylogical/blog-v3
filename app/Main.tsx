@@ -18,20 +18,26 @@ export default function Home({ posts, author }) {
           id="hero"
         >
           {/* Left Column: Greeting */}
-          <div className="flex flex-1 flex-col items-start justify-center ">
+          <div className="flex flex-1 flex-col items-start justify-center">
             <h1 className="mb-4 text-left text-5xl font-bold text-gray-900 dark:text-gray-100">
               hello,
               <br />
               i'm syamil
             </h1>
             <p className="text-left text-xl text-gray-900 opacity-70 dark:text-gray-100">
-              I am generally curious about everything, but I am especially interested in
-              <span className="font-semibold text-gray-900 dark:text-gray-100">
-                {' '}
+              I am generally curious and especially interested in {''}
+              <span className="hand-highlight font-semibold text-gray-900 dark:text-gray-100">
                 advanced manufacturing
               </span>
-              , <span className="font-semibold text-gray-900 dark:text-gray-100"> data</span>, and{' '}
-              <span className="font-semibold text-gray-900 dark:text-gray-100"> social equity</span>
+              {''},{' '}
+              <span className="hand-highlight font-semibold text-gray-900 dark:text-gray-100">
+                data
+              </span>
+              , and{' '}
+              <span className="hand-highlight font-semibold text-gray-900 dark:text-gray-100">
+                {' '}
+                social equity
+              </span>
             </p>
 
             {/* Button Row */}
@@ -53,7 +59,7 @@ export default function Home({ posts, author }) {
           </div>
 
           {/* Right Column: Profile */}
-          <div className="flex flex-1 flex-col items-center justify-center ">
+          <div className="hidden flex-1 flex-col items-center justify-center md:flex">
             {/* Example profile image and bio */}
             {author?.avatar && (
               <Image
@@ -71,12 +77,12 @@ export default function Home({ posts, author }) {
         </section>
       </div>
       <section
-        className="flex min-h-screen scroll-mt-8 flex-col justify-center text-gray-900"
+        className="flex min-h-screen scroll-mt-20 flex-col justify-center text-gray-900"
         id="content"
       >
         <div className="divide-y divide-gray-200 dark:divide-gray-700">
-          <div className="space-y-2 pb-8 pt-6 md:space-y-5">
-            <h1 className="text-3xl font-extrabold leading-9 tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl sm:leading-10 md:text-6xl md:leading-14">
+          <div className="space-y-2 pt-6 pb-8 md:space-y-5">
+            <h1 className="text-3xl leading-9 font-extrabold tracking-tight text-gray-900 sm:text-4xl sm:leading-10 md:text-6xl md:leading-14 dark:text-gray-100">
               recent
             </h1>
             <p className="text-lg leading-7 text-gray-500 dark:text-gray-400">
@@ -93,14 +99,14 @@ export default function Home({ posts, author }) {
                     <div className="space-y-2 xl:grid xl:grid-cols-4 xl:items-baseline xl:space-y-0">
                       <dl>
                         <dt className="sr-only">Published on</dt>
-                        <dd className="text-base font-medium leading-6 text-gray-500 dark:text-gray-400">
+                        <dd className="text-base leading-6 font-medium text-gray-500 dark:text-gray-400">
                           <time dateTime={date}>{formatDate(date, siteMetadata.locale)}</time>
                         </dd>
                       </dl>
                       <div className="space-y-5 xl:col-span-3">
                         <div className="space-y-6">
                           <div>
-                            <h2 className="text-2xl font-bold leading-8 tracking-tight">
+                            <h2 className="text-2xl leading-8 font-bold tracking-tight">
                               <Link
                                 href={`/blog/${slug}`}
                                 className="text-gray-900 dark:text-gray-100"
@@ -118,7 +124,7 @@ export default function Home({ posts, author }) {
                             {summary}
                           </div>
                         </div>
-                        <div className="text-base font-medium leading-6">
+                        <div className="text-base leading-6 font-medium">
                           <Link
                             href={`/blog/${slug}`}
                             className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
