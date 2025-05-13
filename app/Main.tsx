@@ -50,7 +50,7 @@ export default function Home({ posts, author }) {
               </a>
               <a
                 href="#content"
-                className="rounded bg-white px-6 py-3 text-gray-800 shadow transition hover:bg-gray-200"
+                className="rounded bg-gray-100 px-6 py-3 text-gray-900 shadow transition hover:bg-gray-200"
               >
                 read
               </a>
