@@ -14,7 +14,7 @@ export default function Home({ posts, author }) {
         {/* Hero Section */}
 
         <section
-          className="flex h-screen flex-row items-center justify-center text-white"
+          className="hero flex h-screen flex-row items-center justify-center text-white"
           id="hero"
         >
           {/* Left Column: Greeting */}
