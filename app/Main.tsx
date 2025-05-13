@@ -1,5 +1,6 @@
 import Link from '@/components/Link'
 import Tag from '@/components/Tag'
+import HandHighlight from '@/components/Highlight'
 import siteMetadata from '@/data/siteMetadata'
 import { formatDate } from 'pliny/utils/formatDate'
 import Image from 'next/image'
@@ -26,17 +27,28 @@ export default function Home({ posts, author }) {
             </h1>
             <p className="text-left text-xl text-gray-900 opacity-70 dark:text-gray-100">
               I am generally curious and especially interested in {''}
-              <span className="hand-highlight font-semibold text-gray-900 dark:text-gray-100">
-                advanced manufacturing
-              </span>
-              {''},{' '}
-              <span className="hand-highlight font-semibold text-gray-900 dark:text-gray-100">
-                data
-              </span>
-              , and{' '}
-              <span className="hand-highlight font-semibold text-gray-900 dark:text-gray-100">
+              <HandHighlight
+                className="font-semibold text-gray-900 dark:text-gray-100"
+                url="/tags/advanced-manufacturing"
+              >
                 {' '}
-                social equity
+                advanced manufacturing
+              </HandHighlight>
+              {''},{' '}
+              <HandHighlight
+                className="font-semibold text-gray-900 dark:text-gray-100"
+                url="/tags/data"
+              >
+                data
+              </HandHighlight>
+              , and{' '}
+              <span>
+                <HandHighlight
+                  className="font-semibold text-gray-900 dark:text-gray-100"
+                  url="/tags/social-equity"
+                >
+                  social equity
+                </HandHighlight>{' '}
               </span>
             </p>
 
