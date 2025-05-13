@@ -31,7 +31,6 @@ export default function Home({ posts, author }) {
                 className="font-semibold text-gray-900 dark:text-gray-100"
                 url="/tags/advanced-manufacturing"
               >
-                {' '}
                 advanced manufacturing
               </HandHighlight>
               {''},{' '}
