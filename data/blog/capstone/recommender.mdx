@@ -6,7 +6,7 @@ draft: false
 summary: 'Content Discovery using Doc2Vec in the Wild'
 ---
 
-> This is the third of a multi part series that details the processes behind [FastParliament](https://fparl.bearylogical.net). You may view the previous post [here](/post/capstone-summarizer/): 
+> This is the third of a multi part series that details the processes behind [FastParliament](https://fparl.bearylogical.net). You may view the previous post [here](/blog/capstone-summarizer/): 
 
 {/* {{% toc %}} */}
 
@@ -20,7 +20,7 @@ This works well for a small corpus of say, 50 to at most 200 articles. However, 
 
 ## Recap of Vector Representations
 
-In the [previous](/post/capstone-summarizer/) article, sentence vectors were created out of the TF-IDF method where the vector represented weighted frequencies of a particular word in a text.
+In the [previous](/blog/capstone-summarizer/) article, sentence vectors were created out of the TF-IDF method where the vector represented weighted frequencies of a particular word in a text.
 
 While that works for the particular use case, semantics are often lost when we are merely looking at counts of a particular word in the document. 
 
@@ -32,9 +32,14 @@ Word2Vec is a technique to capture contexts between words. There are two key mod
 
 Depending on the case use, one particular model may be preferred over another.
 
+
+
 {/* {{<figure src="word2vec.png" caption="Word2Vec Methods Illustration Obtained from [Rakuten](https://www.slideshare.net/rakutentech/distributed-representationbased-recommender-systems-in-ecommerce)" lightbox="true" >}} */}
 
 The end result, or representations would be somewhat visualised as below:
+
+![Semantic Representation from word vectors. Obtained from [tensorflow docs](https://www.tensorflow.org/tutorials/representation/word2vec).](https://www.tensorflow.org/images/linear-relationships.png)
+_Semantic Representation from word vectors. Obtained from [tensorflow docs](https://www.tensorflow.org/tutorials/representation/word2vec)._
 
 {/* {{<figure src="https://www.tensorflow.org/images/linear-relationships.png" caption="Semantic Representation from word vectors. Obtained from [tensorflow docs](https://www.tensorflow.org/tutorials/representation/word2vec).">}} */}
 

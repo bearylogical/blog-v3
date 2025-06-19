@@ -12,7 +12,7 @@ summary: 'Using AWS to programatically ingest and parse tabular data in PDFs'
 
 On the 16th of February, Deputy Prime Minister and Minister for Finance Lawrence Wong [spoke at length](https://www.mof.gov.sg/docs/librariesprovider3/budget2024/download/pdf/fy2024_budget_statement.pdf) in the Singapore Parliament on the Singapore 2024 Budget. A number of explainers on the budget to detail who gets what and when are readily available<sup> 1, 2</sup>. At the same time, going into [details](https://www.mof.gov.sg/singaporebudget/revenue-and-expenditure) of the budget would be also beneficial for the more inquisitive individuals who are simply looking to get an insight of the fine print. For example, getting information on SimplyGo [debacle](https://www.straitstimes.com/singapore/transport/5-things-you-need-to-know-about-the-simplygo-saga-so-far) with respect to contextualising the costs of the overall Fare Collection and Ticketing system.
 
-![Expenditure  on Fare Collection and Ticketing System](budget-2024-LTA.png)
+![Expenditure  on Fare Collection and Ticketing System](/static/images/parsing-budgetsg-with-aws-textract/budget-2024-LTA.png)
 
 ## The Problem
 
@@ -43,7 +43,7 @@ In the early stages of this thought exercise, 4 ways of extracting information f
 
 ChatGPT or more specifically GPT-4 was used in the evaluation and unfortunately did not produce adequately satisfactory results. For example, the JSON output was not easily understandable and there was a risk of model hallucination that would make the data unreliable. While prompt engineering might be useful in ensuring the document is able to be parsed well, it was outside the scope of the investigation. There may be a use case for large scale knowledge management when the LLM can be used to directly query a backend database to produce deeper levels of insight but again, it was out of scope.
 
-![Interacting with GPT4](gpt4.png)
+![Interacting with GPT4](/static/images/parsing-budgetsg-with-aws-textract/gpt4.png)
 
 For manual extraction and open source PDF parsers, it was briefly investigated but did not produce results that were (1) Scalable and (2) Reliable. To this end, the decision was to use a paid solution to parse the reports. While Google and Azure both have document intelligence expertise that can work with extracting information from PDFs, AWS Textract offered the best out-of-the-box functionality for extracting specifically tabular data in a PDF. This would clearly make it _much_ easier for downstream ingestion and analysis tasks.
 
@@ -55,7 +55,7 @@ From the [AWS Textract website](https://aws.amazon.com/textract/)
 
 For simple cases, AWS does offer a [user interface](https://docs.aws.amazon.com/textract/latest/dg/getting-started.html) to parse documents of less than a few pages (maximum 150 in one batch). However, I needed to process the financial reports across long time horizons and using a web interface would not suit my needs. Thus in my usecase, it was needed to also include other AWS related components such as object storage (S3), a queue service (SQS) and a notification service in order to receive notifications from the Textract service such that I had a scalable document parsing pipeline. To accomplish this, the system architecture as illustrated below was used:
 
-![Textract Architecture](textract_architecture.png)
+![Textract Architecture](/static/images/parsing-budgetsg-with-aws-textract/textract_architecture.png)
 
 In this approach, the document parsing is done in the following manner:
 
@@ -71,7 +71,7 @@ In this approach, the document parsing is done in the following manner:
 
 Using this approach,an example is given for the Ministry of Communications and Information (MCI) expenditure estimate. We start of with a basic PDF table:
 
-![MCI Snapshot](mci.png)
+![MCI Snapshot](/static/images/parsing-budgetsg-with-aws-textract/mci.png)
 
 As you can already see, it has a PDF table that needs some parsing into a structured form. We then use AWS Textract to parse and we obtain a result. We then visualize the output of the textract service using the `amazon-textract-textractor` [python library](https://github.com/aws-samples/amazon-textract-textractor/tree/master).<sup>4</sup> This overlays the result of the extraction service over the document.
 
@@ -84,7 +84,7 @@ document.tables[0].visualize()
 ```
 
 And we get:
-![MCI Textract](mci_textract.png)
+![MCI Textract](/static/images/parsing-budgetsg-with-aws-textract/mci_textract.png)
 
 The various colors correspond to the Table title, section headers and sub-headers! This is already very useful to start before converting this information into a more understandable dataset :)
 
