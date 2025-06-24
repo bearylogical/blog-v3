@@ -6,6 +6,12 @@ interface Project {
 }
 
 const projectsData: Project[] = [
+    {
+    title: 'SearchGov : Analyzing the Singapore Public Service Organization',
+    description: `SearchGov is a project that aims to analyze the organization structure of the Singapore public service. It provides an interactive view of the organization structure, connectivity graph between public servants and understand their career progression.`,
+    imgSrc: '/static/images/projects/searchgov.png',
+    href: 'https://searchgov.bearylogical.net',
+  },
   {
     title: 'Postal SG : Visualizing Singapore Postal Code System',
     description: `What does 120k postal codes in Singapore look like? This project visualizes the distribution of the postal code system and provides an interactive view of the postal code system in Singapore.`,
