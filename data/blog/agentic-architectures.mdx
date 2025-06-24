@@ -1,0 +1,109 @@
+---
+title: 'AI Agents - A short foray'
+date: '2025-06-04'
+tags: ['agentic', 'llm', 'gen-ai']
+draft: false
+summary: 'Some thoughts on agentic AI and examples'
+---
+
+## A prelude
+
+Recently, I had an opportunity to explore working with AI agents for a personal engagement. From this, I thought of documenting some of the lessons from this experience.
+
+On my journey, I tried several things:
+
+1. Explored multimodal agents (video, audio, text)
+2. AI agents with tool calling capabilities
+3. Basic Orchestration of a chain of agents
+4. Prompt engineering (to get structured JSON)
+
+But first, a short primer of what AI agents _are_:
+
+## _What_ are AI Agents?
+
+I will assume that as of today, 2025, the availability of AI chatbots such as [ChatGPT](https://chatgpt.com/?mode=voice), [Gemini](https://gemini.google.com/app), etc have become pretty widespread and you, the reader, have probably used/heard about it.
+
+Agents are simply very focused "chatGPTs" that are autonomous, have specific goals, and are typically task oriented. They excel in environments where autonomy is valued and agents can perform actions as it deems relevant to the goal and task. 
+
+If we think of a complex problem, say, buying a house or even planning a vacation, we can see how agents fit in by looking at the subtasks that facilitate how the problem (or main task) is resolved.
+
+In the "buy a house" problem, the following sub tasks are possible:
+- Explore the house prices for that area
+- Evaluate the amentities in the area
+- Ensure that the overall safety of the area is OK
+- Understand regulations around home ownership
+- Have an overview of the financial costs related to the purchase
+- and so on...
+
+If we look at the sub tasks again, you can see that in practical terms, each task is typically accomplished by a specialist (e.g. realtor, contractor, lawyer, etc.). In the agentic approach, the specialist can be an agent. 
+
+Now, what's the difference between this and just chatting with ChatGPT? For most part, ChatGPT excels at general tasks and has a limited memory (or context window) to keep track of user requests and feedback, but it will lack distinct goals to better align the result with what the user desires ultimately. 
+
+Where agents excel however it through the use of "system prompts" that define roles of the agents. In addition, agents can "use" tools that extend its functionality out of intemediate working environment. For example, an agents can visit a website and explore it to provide relevant advice to a user question. 
+
+## Back on track: multimodal agents
+
+Multimodality is a highly valued trait in the LLM space. The ability to interpret (_understanding_ might be too large of a stretch) audio, video and textual inputs provide a large flexibility in understanding reality of the work.
+
+The business challenge was embedded in the space of videos and sounds with the goal of trend discovery and content creation. Because of this, multimodality is a critical need.
+
+Some considerations such as input capabilities, cost and context windows were part of the review preocess. In doing, I came up with a table of LLM providers and their respective capabilties which might be useful (This assessment was done somewhere around the May-June period).
+| Provider | Model | Text | Audio | Image | Video | Documents | Cost | Remarks |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Google | Gemini 2.5 Pro | ✅ | ✅ | ✅ | ✅ | ✅ | 2.50USD (200k input tokens) | Generous context window (1M), Relatively high latency (thinking mode > 5s) |
+| Google | Gemini 2.5 Flash | ✅ | ✅ | ✅ | ✅ | ✅ | 0.3USD| Generous context window (1M), medium latency (< 5s), reasonable cost |
+| Google | Gemini 2.5 Flash Lite | ✅ | ✅ | ✅ | ✅ | ✅ | 0.1USD| Generous context window (1M), low latency (< 3s), low price. |
+| OpenAI | GPT 4.1| ✅ | ❌ | ✅ |❌ | ✅ | 2.00USD (/MTok)| Generous context window (1M), medium latency (< 3s) |
+| OpenAI | o4-mini| ✅ | ❌ | ✅ |❌ | ✅ | 1.10USD (/MTok)| 200k context window, medium latency (< 3s) |
+| Anthropic | Claude Opus 4| ✅ | ❌ | ✅ |❌ | ✅ | 15.00USD (/MTok) | 200k context window, medium latency (< 3s), Great reasoning capability|
+| Anthropic | Claude Sonnet 4| ✅ | ❌ | ✅ |❌ | ✅ | 3.00USD (/MTok) | 200k context window, medium latency (< 3s) |
+| DeepSeek | DeepSeek R1 | ✅ | ❌ | ✅ |❌ | ✅ | 0.55USD (/MTok) 64k context window, medium latency (< 3s) |
+
+As you can see from the overview above, Google's Gemini offers the most versatile approach to inputs. With multimodality being a key element, its cost-to-value ratio seems very attractive along with its generous context window.
+
+For multimodality, large context windows are especially useful as videos carry a large amount of information. 
+
+Consider a 30second video shot at 25fps (typical frame rate). You can decompose it to:
+- 30 seconds of audio
+- 30 * 25 = 750 frames (or pictures)
+- 30 video stills (at 1fps - specifically for Gemini)
+From which each of these has respective token values attached to each second or image. [Gemini for example](https://ai.google.dev/gemini-api/docs/tokens?lang=python) considers an image (all images are scaled/cropped to 768x768) to be 258 tokens, videos at 263 tokens per second and audio at 32 tokens per second. Note: [video frame and audio track for that video are independently counted](https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/video-understanding#technical-details-video)
+
+Of course you can also create your own LLM, or use the open models, but well, you do you.
+
+Now that a resonable model can be selected, we consider another capability: Tool/Function calling.
+
+## When all you have is a hammer, everything looks like a nail
+
+Once you figure out what LLM model you would use, you can think more deeply about the goal of your agent. An LLM is a self-countained box, with its weights frozen since it was trained. Also, it will likely not have access to proprietary data stored on certain web resources (especially if it has been updated recently). This is where function and its more generalized form, tool calling, comes in. What this does is that it provdes your model with extensions to interact with external environment. For example, one function can be to query an in-house database for the latest cat pics, or call an API to get the latest cat videos. 
+
+An agent, which is expected to be autonomous, would use functions/tools to accomplish its system goals. 
+
+I explored creating an agent that would call a function (which itself has an agent attached to it) to parse information off a webpage. These days, webcrawling is relatively straightforward especially when you pair it with an LLM. An example of such a strategy and its implementation using the Crawl4AI library can be found [here](https://docs.crawl4ai.com/extraction/llm-strategies/).
+
+More critically, the webcrawler, with the aid of an LLM, can parse complex unstructured content and transform it into structured JSON (or any equivalent data-model) which would allow for more complex downstream tasks with predefined schemas. Schemas can improve the task alignment of large language models by getting it to output on a business-relevant data structure along with some [straightforward prompt engineering](https://www.promptingguide.ai/guides/optimizing-prompts#key-considerations-for-prompt-design).  
+
+Of course the design of these agents are highly important (see header). Having access to _relevant_ functions aligned with the agents' _objectives_ are crucial to ensure that the agent behaves as desired. 
+
+## A symphony or a cacophany, you choose
+
+Every orchestra needs a conductor, or an _orchestrator_ in order to manage the AI agent "zoo". In most cases, we can view all the tasks as part of a Directed Acyclic Graph (DAG) where we go from a bunch of inputs to produce the desired output(s).
+
+While there are a number of orchestration platforms today, [n8n](https://n8n.io/) has a nice offering well adapted for AI workflows. BUT of course, if its for a small project, you might be better off just chaining them together with the help of established frameworks such as [PydanticAI](https://ai.pydantic.dev/) and [LangChain](https://www.langchain.com/). Personally, i prefer pydantic AI due to its clearer documentation and functionality.
+
+## Your agent is only as good as your prompt
+
+As in the physical world, the way we express intentions are important. Giving someone clear and explicit instructions (go to X and get Y with Z) can go a long way in getting what you want. In the AI agent space, a `prompt` is the equivalent of such instructions. A great resource for prompting is the [Prompt Engineering Guide](https://www.promptingguide.ai/) which offers a pretty comprehensive view on prompting concepts to advanced prompt formulations.
+
+I'm not going to go through all the prompting elements but what I think is really useful is StructuredJSON output, which means that instead of agents replying in sentences, they can present their responses as data objects! All you need are two things:
+
+1. Data model / schema which describes your expected data output
+2. Including an expectation of what each attribute of your data model is supposed to represent.
+
+If we go back to the web crawling agent, a LLM web scraper can easily obtain pricing information from highly unstructured data (e.g. data not in tables but perhaps in pdfs or in paragraphs scattered on a webpage).
+
+## Agentic AI against the impending AI winter?
+
+Let's face it, agentic AIs are here to stay. The capability of imbuing specific roles in AI and having them generate structured outputs is a highly attractive productivity multiplier in any large organisation. However, there remains clear concern on the need for guard rails to counter invalid and false outputs (hallucinations) of the agent. Notwithstanding the limitation of large language models to be restricted by its "frozen" state and be truly adaptive to new information, there are still many unseen opportunities for human and AI interaction that takes those limitations into account.
+
+Just like the steam engine, the railroad, computers and the internet are transformative technologies that displaced (and created) new industries along with massive economies of scale, agentic AI shows much promise.
