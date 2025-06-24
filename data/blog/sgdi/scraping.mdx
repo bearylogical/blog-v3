@@ -59,6 +59,8 @@ After running `docker-compose` and building the containers, my Airflow and scrap
 In Airflow, my scraping task is defined as a Directed Acyclic Graph (DAG) which is Airflow's fancy way of saying a workflow. My DAG is represented in the image below:
 
 {/* {{< figure src="sgdi_flow.png" caption="">}} */}
+![sgdi flow](/static/images/sgdi_data/sgdi_flow.png)
+_Flow of the SGDI task_
 
 Four tasks are specified:
 1. `scrapy_sgdi_check_health` - Checks whether the Scrapy service is running, as the Scrapy service does abruptly exits sometimes and this check can be used to get the service back up if it is down.
@@ -71,6 +73,7 @@ As part of the DAG definition, we can also define what to do if the task fails, 
 When that's all defined, upon running our DAG, we get all these cool status reports out of the box:
 
 {/* {{< figure src="scrapy_timeline.png" caption="">}} */}
+![scrapy timeline](/static/images/sgdi_data/scrapy_timeline.png)
 
 From the image above, we do see that there are times when the task fails and that's clearly visible. It's extremely helpful especially if you intend to do a "run and forget" approach. You can revisit the logs and check what and why things failed without writing any additional code!
 
