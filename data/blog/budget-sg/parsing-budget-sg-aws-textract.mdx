@@ -12,7 +12,9 @@ summary: 'Using AWS to programatically ingest and parse tabular data in PDFs'
 
 On the 16th of February, Deputy Prime Minister and Minister for Finance Lawrence Wong [spoke at length](https://www.mof.gov.sg/docs/librariesprovider3/budget2024/download/pdf/fy2024_budget_statement.pdf) in the Singapore Parliament on the Singapore 2024 Budget. A number of explainers on the budget to detail who gets what and when are readily available<sup> 1, 2</sup>. At the same time, going into [details](https://www.mof.gov.sg/singaporebudget/revenue-and-expenditure) of the budget would be also beneficial for the more inquisitive individuals who are simply looking to get an insight of the fine print. For example, getting information on SimplyGo [debacle](https://www.straitstimes.com/singapore/transport/5-things-you-need-to-know-about-the-simplygo-saga-so-far) with respect to contextualising the costs of the overall Fare Collection and Ticketing system.
 
-![Expenditure  on Fare Collection and Ticketing System](/static/images/parsing-budgetsg-with-aws-textract/budget-2024-LTA.png)
+![Expenditure  on Fare Collection and Ticketing System](/static/images/parsing-budgetsg-with-aws-textract/budget-2024-LTA.png "Expenditure  on Fare Collection and Ticketing System")
+_Expenditure  on Fare Collection and Ticketing System_
+{/* <Figure src="/static/images/parsing-budgetsg-with-aws-textract/budget-2024-LTA.png" width={300} height={300}/> */}
 
 ## The Problem
 
@@ -26,7 +28,7 @@ In Singapore, (official) structured <sup> </sup> public data can be found in a n
 
 On the Singapore budget, only top level data is provided - e.g. Overall Expenditure and Revenue. An example of such a dataset is the Government Budget and Fiscal Position, where granularity stops at the Ministerial level and no information of its constitutent expenditure is provided. An example from Data.gov.sg is provided in the screenshot below.
 
-![Data.gov.sg Dataset](datagov.png)
+![Data.gov.sg Dataset](/static/images/parsing-budgetsg-with-aws-textract/datagov.png)
 
 While limiting, as mentioned in the introduction, all is not lost. Line item information is at least published by the Ministry of Finance in PDF-formatted reports similar to a financial report statement. In order to quench my curiosity, another way forward is needed.
 
@@ -102,6 +104,10 @@ The key takeaway from this is that we have a way to deal with unstructured offic
 ### Disclaimer
 
 I do not have affliations to AWS or any entities mentioned in this write-up. All attributions are provided at a best-effort basis and the use of any information from this page is at your own risk.
+
+## Update
+
+From this work [Gahmen Explorer](https://gahmen.bearylogical.net) was created! 
 
 ## References
 
