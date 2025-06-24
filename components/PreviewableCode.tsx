@@ -37,7 +37,7 @@ interface PreviewableCodeProps {
   children: ReactNode
   enablePreview?: boolean
   defaultView?: 'preview' | 'code'
-  renderers: { [key: string]: ComponentType<{ code: string;[key: string]: unknown }> }
+  renderers: { [key: string]: ComponentType<{ code: string; [key: string]: unknown }> }
   [key: string]: unknown
 }
 
@@ -77,10 +77,11 @@ const PreviewableCode = ({
           <Tab as={Fragment}>
             {({ selected }) => (
               <button
-                className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${selected
+                className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                  selected
                     ? 'border-primary-500 text-primary-600 dark:text-primary-500'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                  } `}
+                } `}
               >
                 Code
               </button>
@@ -89,10 +90,11 @@ const PreviewableCode = ({
           <Tab as={Fragment}>
             {({ selected }) => (
               <button
-                className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${selected
+                className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                  selected
                     ? 'border-primary-500 text-primary-600 dark:text-primary-500'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                  } `}
+                } `}
               >
                 Preview
               </button>
