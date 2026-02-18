@@ -46,7 +46,7 @@ export default function Home({ posts, author }) {
                   className="font-semibold text-gray-900 dark:text-gray-100"
                   url="/tags/social-equity"
                 >
-                  social equity
+                  random bits of knowledge
                 </HandHighlight>{' '}
               </span>
             </p>
